@@ -1,5 +1,6 @@
 from aiogram import Router, F
-from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.enums import ParseMode
+from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, KeyboardButtonPollType
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 
@@ -8,20 +9,48 @@ from utils import send_admin_notification
 
 router = Router()
 
+class ButtonText:
+    ORDER = "Оставить заявку"
+    CANCEL = "Отмена"
+    HELP = "Справка"
+    RETRY = "Заполнить заново"
+
+def get_on_start_keyboard() -> ReplyKeyboardMarkup:
+    button_order = KeyboardButton(text="Оставить заявку")
+    button_help = KeyboardButton(text="Справка")
+    button_retry = KeyboardButton(text="Заполнить заново")
+    button_cancel = KeyboardButton(text="Отмена")
+    buttons_first_row = [button_order, button_help]
+    buttons_second_row = [button_retry, button_cancel]
+    markup = ReplyKeyboardMarkup(keyboard=[buttons_first_row, buttons_second_row])
+    return markup
+
 
 # Команда /start
 @router.message(Command("start"))
 async def cmd_start(message: Message, state: FSMContext):
     await state.clear()
     await message.answer(
-        "🚗 Добро пожаловать в бот Carmash!\n\n"
+        text="🚗 Добро пожаловать в бот Carmash!\n\n"
         "Оформить заявку - нажмите /order\n"
-        "Если ошиблись и хотите заполнить заявку заново - нажмите /retry\n"
-        "Для отмены в любой момент нажмите /cancel"
+        "Ошиблись? Заполните заявку заново - нажмите /retry\n"
+        "Для отмены в любой момент - нажмите /cancel\n"
+        "Помощь по работе бота - /help",
+        parse_mode=ParseMode.HTML,
+        reply_markup=get_on_start_keyboard(),
     )
-
+@router.message(F.text == ButtonText.HELP)
+@router.message(Command("help"))
+async def cmd_help(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer(text="🚗 Команды бота 🚗\n\n"
+        "/order - Оформить заявку\n"
+        "/retry - Заполнить заново (при ошибке)\n"
+        "/cancel - Для отмены в любой момент \n"
+        "/help - Справка по работе бота",)
 
 # Команда /order - начало оформления заявки
+@router.message(F.text == ButtonText.ORDER)
 @router.message(Command("order"))
 async def cmd_order(message: Message, state: FSMContext):
     await state.set_state(OrderCar.name)
@@ -32,14 +61,13 @@ async def cmd_order(message: Message, state: FSMContext):
 
 
 # Команда /cancel - отмена заявки
+@router.message(F.text == ButtonText.CANCEL)
 @router.message(Command("cancel"))
-@router.message(F.text.casefold() == "отмена")
 async def cancel_handler(message: Message, state: FSMContext):
     current_state = await state.get_state()
     if current_state is None:
         await message.answer("Нет активных заявок.")
         return
-
     await state.clear()
     await message.answer("Заявка отменена. Для новой заявки нажмите /order")
 
