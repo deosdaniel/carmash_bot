@@ -15,11 +15,11 @@ def get_on_start_keyboard() -> ReplyKeyboardMarkup:
     button_cancel = KeyboardButton(text="Отмена")
     buttons_first_row = [button_order, button_help]
     buttons_second_row = [button_retry, button_cancel]
-    markup = ReplyKeyboardMarkup(keyboard=[buttons_first_row, buttons_second_row], one_time_keyboard=True)
+    markup = ReplyKeyboardMarkup(keyboard=[buttons_first_row, buttons_second_row], resize_keyboard=True, one_time_keyboard=True)
     return markup
 
 def get_phone_keyboard() -> ReplyKeyboardMarkup:
     button_phone = KeyboardButton(text="📞Оставить свой номер из Telegram", request_contact=True)
     buttons = [button_phone]
-    markup = ReplyKeyboardMarkup(keyboard=[buttons], one_time_keyboard=True)
+    markup = ReplyKeyboardMarkup(keyboard=[buttons], one_time_keyboard=True, resize_keyboard=True)
     return markup
