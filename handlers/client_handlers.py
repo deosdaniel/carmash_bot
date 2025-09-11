@@ -1,29 +1,14 @@
 from aiogram import Router, F
 from aiogram.enums import ParseMode
-from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, KeyboardButtonPollType
-from aiogram.filters import Command, StateFilter
+from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 
+from keyboards.common import ButtonText, get_on_start_keyboard, get_phone_keyboard
 from states import OrderCar
 from utils import send_admin_notification
 
 router = Router()
-
-class ButtonText:
-    ORDER = "Оставить заявку"
-    CANCEL = "Отмена"
-    HELP = "Справка"
-    RETRY = "Заполнить заново"
-
-def get_on_start_keyboard() -> ReplyKeyboardMarkup:
-    button_order = KeyboardButton(text="Оставить заявку")
-    button_help = KeyboardButton(text="Справка")
-    button_retry = KeyboardButton(text="Заполнить заново")
-    button_cancel = KeyboardButton(text="Отмена")
-    buttons_first_row = [button_order, button_help]
-    buttons_second_row = [button_retry, button_cancel]
-    markup = ReplyKeyboardMarkup(keyboard=[buttons_first_row, buttons_second_row])
-    return markup
 
 
 # Команда /start
@@ -77,16 +62,9 @@ async def cancel_handler(message: Message, state: FSMContext):
 async def process_name(message: Message, state: FSMContext):
     await state.update_data(name=message.text)
     await state.set_state(OrderCar.phone)
-
-    phone_keyboard = ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text="📞 Отправить номер телефона", request_contact=True)]],
-        resize_keyboard=True,
-        one_time_keyboard=True
-    )
-
     await message.answer(
         "📞 Теперь введите ваш номер телефона или нажмите кнопку ниже:",
-        reply_markup=phone_keyboard
+        reply_markup=get_phone_keyboard(),
     )
 
 
