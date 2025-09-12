@@ -2,15 +2,13 @@ import time
 from collections import defaultdict
 
 from aiogram import Router, F
-from aiogram.enums import ParseMode
-from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import Message
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiohttp.payload import Order
 
 from keyboards.common import ButtonText, get_on_start_keyboard, get_phone_keyboard, send_order
 from states import OrderCar
-from utils import send_admin_notification, handle_retry
+from utils import  handle_retry
 
 router = Router()
 
@@ -19,9 +17,10 @@ last_start_calls = defaultdict(float)
 class OrderSteps:
     NAME = "Пожалуйста, введите ваше имя:"
     PHONE = "📞 Введите ваш номер телефона или нажмите кнопку ниже:"
-    EMAIL = "📧 Введите ваш email:"
-    MODEL = "🚗 Введите марку и модель автомобиля:"
-    BUDGET = "💰 Введите ваш бюджет (в RUB):"
+    EMAIL = "✅ Супер, двигаемся далее!\n\n 📧 Введите ваш email:"
+    CITY = "✅ Отлично, К следующему шагу!\n\n 🏙 Введите город, откуда вы обращаетесь:"
+    MODEL = "✅ Здорово, мы почти закончили\n\n🚗 Введите желаемую марку и/или модель автомобиля:"
+    BUDGET = "✅ Финальный штрих\n\n💰 Введите ваш бюджет (в RUB):"
 
 # Команда /start
 @router.message(Command("start"))
@@ -49,12 +48,15 @@ async def cmd_start(message: Message, state: FSMContext):
         }
 
         current_step = state_to_message.get(current_state, "продолжите заполнение")
+
+        data = await state.get_data()
         await message.answer(
-            f"🚗 Добро пожаловать обратно!\n\n"
-            f"У вас есть незавершенная заявка.\n\n"
-            f"Чтобы начать заново - /retry\n"
-            f"Чтобы отменить - /cancel\n"
-            f"Помощь по работе бота - /help\n\n"
+            f"🚗 {data["name"]}, добро пожаловать обратно, Мы скучали!\n\n"
+            f"⚠ У вас есть незавершенная заявка.\n\n"
+            f"❔ Чтобы начать заново - /retry\n"
+            f"❔ Чтобы отменить - /cancel\n"
+            f"❔ Помощь по работе бота - /help\n\n"
+            f"✅ Если хотите продолжить заполнять текущую заявку:\n\n"
             f"{current_step}"
         )
     else:
@@ -104,7 +106,8 @@ async def cmd_retry(message: Message, state: FSMContext):
 async def cmd_order(message: Message, state: FSMContext):
     await state.set_state(OrderCar.name)
     await message.answer(
-        f"📝 Давайте оформим заявку на автомобиль!\n\n"
+        f"📝 Итак, начнем! 📝\n\n"
+        f"Давайте оформим заявку на автомобиль!\n\n"
         f"{OrderSteps.NAME}"
     )
 
@@ -113,9 +116,16 @@ async def cmd_order(message: Message, state: FSMContext):
 # Обработка имени
 @router.message(OrderCar.name, F.text)
 async def process_name(message: Message, state: FSMContext):
-    await state.update_data(name=message.text)
+    name = message.text.strip().lower().capitalize()
+    await state.update_data(name=name)
     await state.set_state(OrderCar.phone)
-    await message.answer(OrderSteps.PHONE,
+
+    await state.update_data(name=name)
+
+    await state.set_state(OrderCar.phone)
+    msg = f"✅ {name}, очень приятно познакомиться!\n\n"
+    msg += OrderSteps.PHONE
+    await message.answer(msg,
         reply_markup=get_phone_keyboard(),
     )
 
@@ -123,6 +133,7 @@ async def process_name(message: Message, state: FSMContext):
 # Обработка телефона
 @router.message(OrderCar.phone, F.contact)
 async def process_phone_contact(message: Message, state: FSMContext):
+
     await state.update_data(phone=message.contact.phone_number)
     await state.set_state(OrderCar.email)
     await message.answer(OrderSteps.EMAIL,
@@ -132,10 +143,13 @@ async def process_phone_contact(message: Message, state: FSMContext):
 
 @router.message(OrderCar.phone, F.text)
 async def process_phone_text(message: Message, state: FSMContext):
+
+    data = await state.get_data()
+
     # Простая валидация номера телефона
     phone = message.text.strip()
     if not any(char.isdigit() for char in phone) or len(phone) < 5:
-        await message.answer("Пожалуйста, введите корректный номер телефона:")
+        await message.answer(f"⚠ {data['name']}, пожалуйста, введите корректный номер телефона:")
         return
 
     await state.update_data(phone=phone)
@@ -146,10 +160,11 @@ async def process_phone_text(message: Message, state: FSMContext):
 # Обработка email
 @router.message(OrderCar.email, F.text)
 async def process_email(message: Message, state: FSMContext):
+    data = await state.get_data()
     email = message.text.strip()
     # Простая валидация email
     if '@' not in email or '.' not in email:
-        await message.answer("Пожалуйста, введите корректный email:")
+        await message.answer(f"⚠ {data['name']}, пожалуйста, введите корректный email:")
         return
 
     await state.update_data(email=email)
@@ -168,15 +183,16 @@ async def process_car_model(message: Message, state: FSMContext):
 # Обработка бюджета
 @router.message(OrderCar.budget, F.text)
 async def process_budget(message: Message, state: FSMContext, bot):
+    data = await state.get_data()
+
     budget = message.text.strip()
     # Проверяем, содержит ли бюджет цифры
     if not any(char.isdigit() for char in budget):
-        await message.answer("Пожалуйста, введите бюджет цифрами:")
+        await message.answer(f"⚠ {data['name']}, пожалуйста, введите бюджет цифрами:")
         return
 
     await state.update_data(budget=budget)
 
-    # Получаем все данные
     data = await state.get_data()
 
     confirmation_text = (
