@@ -6,6 +6,7 @@ from aiogram.enums import ParseMode
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
+from aiohttp.payload import Order
 
 from keyboards.common import ButtonText, get_on_start_keyboard, get_phone_keyboard, send_order
 from states import OrderCar
@@ -14,6 +15,13 @@ from utils import send_admin_notification, handle_retry
 router = Router()
 
 last_start_calls = defaultdict(float)
+
+class OrderSteps:
+    NAME = "Пожалуйста, введите ваше имя:"
+    PHONE = "📞 Введите ваш номер телефона или нажмите кнопку ниже:"
+    EMAIL = "📧 Введите ваш email:"
+    MODEL = "🚗 Введите марку и модель автомобиля:"
+    BUDGET = "💰 Введите ваш бюджет (в RUB):"
 
 # Команда /start
 @router.message(Command("start"))
@@ -28,16 +36,36 @@ async def cmd_start(message: Message, state: FSMContext):
     last_start_calls[user_id] = current_time
 
 
-    await state.clear()
-    await message.answer(
-        text="🚗 Добро пожаловать в бот Carmash!\n\n"
-        "Оформить заявку - нажмите /order\n"
-        "Ошиблись? Заполните заявку заново - нажмите /retry\n"
-        "Для отмены в любой момент - нажмите /cancel\n"
-        "Помощь по работе бота - /help",
-        parse_mode=ParseMode.HTML,
-        reply_markup=get_on_start_keyboard(),
-    )
+    current_state = await state.get_state()
+
+    if current_state:
+        # Короткое уведомление + подсказка что делать дальше
+        state_to_message = {
+            "OrderCar:name": OrderSteps.NAME,
+            "OrderCar:phone": OrderSteps.PHONE,
+            "OrderCar:email": OrderSteps.EMAIL,
+            "OrderCar:car_model": OrderSteps.MODEL,
+            "OrderCar:budget": OrderSteps.BUDGET,
+        }
+
+        current_step = state_to_message.get(current_state, "продолжите заполнение")
+        await message.answer(
+            f"🚗 Добро пожаловать обратно!\n\n"
+            f"У вас есть незавершенная заявка.\n\n"
+            f"Чтобы начать заново - /retry\n"
+            f"Чтобы отменить - /cancel\n"
+            f"Помощь по работе бота - /help\n\n"
+            f"{current_step}"
+        )
+    else:
+        await message.answer(
+            text="🚗 Добро пожаловать в бот Carmash!\n\n"
+            "Оформить заявку - нажмите /order\n"
+            "Ошиблись? Заполните заявку заново - нажмите /retry\n"
+            "Для отмены в любой момент - нажмите /cancel\n"
+            "Помощь по работе бота - /help",
+            reply_markup=get_on_start_keyboard(),
+        )
 
 # Команда /help - справка
 @router.message(F.text == ButtonText.HELP)
@@ -76,8 +104,8 @@ async def cmd_retry(message: Message, state: FSMContext):
 async def cmd_order(message: Message, state: FSMContext):
     await state.set_state(OrderCar.name)
     await message.answer(
-        "📝 Давайте оформим заявку на автомобиль!\n\n"
-        "Пожалуйста, введите ваше имя:"
+        f"📝 Давайте оформим заявку на автомобиль!\n\n"
+        f"{OrderSteps.NAME}"
     )
 
 
@@ -87,8 +115,7 @@ async def cmd_order(message: Message, state: FSMContext):
 async def process_name(message: Message, state: FSMContext):
     await state.update_data(name=message.text)
     await state.set_state(OrderCar.phone)
-    await message.answer(
-        "📞 Теперь введите ваш номер телефона или нажмите кнопку ниже:",
+    await message.answer(OrderSteps.PHONE,
         reply_markup=get_phone_keyboard(),
     )
 
@@ -98,8 +125,7 @@ async def process_name(message: Message, state: FSMContext):
 async def process_phone_contact(message: Message, state: FSMContext):
     await state.update_data(phone=message.contact.phone_number)
     await state.set_state(OrderCar.email)
-    await message.answer(
-        "📧 Введите ваш email:",
+    await message.answer(OrderSteps.EMAIL,
         reply_markup=None
     )
 
@@ -114,7 +140,7 @@ async def process_phone_text(message: Message, state: FSMContext):
 
     await state.update_data(phone=phone)
     await state.set_state(OrderCar.email)
-    await message.answer("📧 Введите ваш email:")
+    await message.answer(OrderSteps.EMAIL)
 
 
 # Обработка email
@@ -128,7 +154,7 @@ async def process_email(message: Message, state: FSMContext):
 
     await state.update_data(email=email)
     await state.set_state(OrderCar.car_model)
-    await message.answer("🚗 Введите марку и модель автомобиля:")
+    await message.answer(OrderSteps.MODEL)
 
 
 # Обработка марки/модели
@@ -136,7 +162,7 @@ async def process_email(message: Message, state: FSMContext):
 async def process_car_model(message: Message, state: FSMContext):
     await state.update_data(car_model=message.text)
     await state.set_state(OrderCar.budget)
-    await message.answer("💰 Введите ваш бюджет (в USD):")
+    await message.answer(OrderSteps.BUDGET)
 
 
 # Обработка бюджета
