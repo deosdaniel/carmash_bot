@@ -1,19 +1,31 @@
+import time
+
 from aiogram import Router, F
 from aiogram.enums import ParseMode
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 
-from keyboards.common import ButtonText, get_on_start_keyboard, get_phone_keyboard
+from keyboards.common import ButtonText, get_on_start_keyboard, get_phone_keyboard, send_order
 from states import OrderCar
 from utils import send_admin_notification
 
 router = Router()
 
+last_start_calls = {}
 
 # Команда /start
 @router.message(Command("start"))
 async def cmd_start(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    current_time = time.time()
+
+    # Проверяем, был ли вызов менее 2 секунд назад
+    if user_id in last_start_calls:
+        if current_time - last_start_calls[user_id] < 2:
+            return
+
+    last_start_calls[user_id] = current_time
     await state.clear()
     await message.answer(
         text="🚗 Добро пожаловать в бот Carmash!\n\n"
@@ -24,6 +36,8 @@ async def cmd_start(message: Message, state: FSMContext):
         parse_mode=ParseMode.HTML,
         reply_markup=get_on_start_keyboard(),
     )
+
+# Команда /help - справка
 @router.message(F.text == ButtonText.HELP)
 @router.message(Command("help"))
 async def cmd_help(message: Message, state: FSMContext):
@@ -33,6 +47,35 @@ async def cmd_help(message: Message, state: FSMContext):
         "/retry - Заполнить заново (при ошибке)\n"
         "/cancel - Для отмены в любой момент \n"
         "/help - Справка по работе бота",)
+
+
+# Команда /cancel - отмена заявки
+@router.message(F.text == ButtonText.CANCEL)
+@router.message(Command("cancel"))
+async def cmd_cancel(message: Message, state: FSMContext):
+    current_state = await state.get_state()
+    if current_state is None:
+        await message.answer("Нет активных заявок.")
+        return
+    await state.clear()
+    await message.answer("Заявка отменена. Для новой заявки нажмите /order")
+
+# Команда /retry - заполнить заявку заново при ошибке
+@router.message(F.text == ButtonText.RETRY)
+@router.message(Command("retry"))
+async def cmd_retry(message: Message, state: FSMContext):
+    current_state = await state.get_state()
+    if current_state is None:
+        await message.answer("Нет заяок в процессе заполнения. Для новой заявки нажмите /order")
+        return
+    await state.clear()
+    await state.set_state(OrderCar.name)
+    await message.answer("🔄 Заявка сброшена 🔄\n\n"
+                         " Начинаем заполнение заявки заново!\n"
+                         "Пожалуйста, введите ваше имя:"
+                         )
+
+
 
 # Команда /order - начало оформления заявки
 @router.message(F.text == ButtonText.ORDER)
@@ -44,17 +87,6 @@ async def cmd_order(message: Message, state: FSMContext):
         "Пожалуйста, введите ваше имя:"
     )
 
-
-# Команда /cancel - отмена заявки
-@router.message(F.text == ButtonText.CANCEL)
-@router.message(Command("cancel"))
-async def cancel_handler(message: Message, state: FSMContext):
-    current_state = await state.get_state()
-    if current_state is None:
-        await message.answer("Нет активных заявок.")
-        return
-    await state.clear()
-    await message.answer("Заявка отменена. Для новой заявки нажмите /order")
 
 
 # Обработка имени
@@ -128,14 +160,18 @@ async def process_budget(message: Message, state: FSMContext, bot):
     # Получаем все данные
     data = await state.get_data()
 
-    # Отправляем сообщение админу
-    await send_admin_notification(bot, data, message.from_user.id)
-
-    # Очищаем состояние
-    await state.clear()
+    confirmation_text = (
+        "🚗 *Давайте проверим вашу заявку перед отправкой!*\n\n"
+        f"👤 *Имя:* {data['name']}\n"
+        f"📞 *Телефон:* {data['phone']}\n"
+        f"📧 *Email:* {data['email']}\n"
+        f"🚗 *Марка/Модель:* {data['car_model']}\n"
+        f"💰 *Бюджет:* {data['budget']} USD\n\n"
+        "_Выберите действие:_"
+    )
 
     await message.answer(
-        "✅ Ваша заявка успешно отправлена!\n"
-        "Наш менеджер свяжется с вами в ближайшее время.\n\n"
-        "Для новой заявки нажмите /order"
+        confirmation_text,
+        parse_mode="Markdown",
+        reply_markup=send_order()
     )

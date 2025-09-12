@@ -5,7 +5,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
 from config import BOT_TOKEN, ADMIN_CHAT_ID
-from handlers import client_handlers, admin_handlers
+from handlers import client_handlers, admin_handlers, callback_handlers
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -18,6 +18,7 @@ dp = Dispatcher()
 # Включаем роутеры
 dp.include_router(client_handlers.router)
 dp.include_router(admin_handlers.router)
+dp.include_router(callback_handlers.router)
 
 
 async def on_startup():
