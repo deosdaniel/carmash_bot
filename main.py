@@ -18,7 +18,7 @@ dp = Dispatcher()
 # Включаем роутеры
 dp.include_router(client_handlers.router)
 dp.include_router(admin_handlers.router)
-dp.include_router(callback_handlers.router)
+dp.include_router(callback_handlers.callback_router)
 
 
 async def on_startup():

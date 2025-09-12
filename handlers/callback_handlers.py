@@ -4,13 +4,13 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
 from states import OrderCar
-from utils import send_admin_notification
+from utils import send_admin_notification, handle_retry
 
-router = Router()
+callback_router = Router()
 
 
 # Обработчик подтверждения заявки
-@router.callback_query(F.data == "confirm", StateFilter(OrderCar.budget))
+@callback_router.callback_query(F.data == "confirm", StateFilter(OrderCar.budget))
 async def process_confirm(callback: CallbackQuery, state: FSMContext, bot: Bot):
     # Получаем данные из состояния
     data = await state.get_data()
@@ -34,21 +34,13 @@ async def process_confirm(callback: CallbackQuery, state: FSMContext, bot: Bot):
 
 
 # Обработчик исправления заявки
-@router.callback_query(F.data == "retry", StateFilter(OrderCar.budget))
+@callback_router.callback_query(F.data == "retry", StateFilter(OrderCar.budget))
 async def process_retry(callback: CallbackQuery, state: FSMContext):
-    # Очищаем состояние и начинаем заново
-    await state.clear()
-    await state.set_state(OrderCar.name)
-
-    await callback.message.edit_text(
-        "🔄 Начинаем заполнение заявки заново!\n\n"
-        "Пожалуйста, введите ваше имя:",
-        reply_markup=None
-    )
+    await handle_retry(callback.message.chat.id, state, callback.bot, callback.message.message_id)
 
     await callback.answer()
 
-@router.callback_query(F.data == "cancel", StateFilter(OrderCar.budget))
+@callback_router.callback_query(F.data == "cancel", StateFilter(OrderCar.budget))
 async def process_cancel(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.message.edit_text(

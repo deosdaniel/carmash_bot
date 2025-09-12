@@ -1,4 +1,5 @@
 import time
+from collections import defaultdict
 
 from aiogram import Router, F
 from aiogram.enums import ParseMode
@@ -8,24 +9,25 @@ from aiogram.fsm.context import FSMContext
 
 from keyboards.common import ButtonText, get_on_start_keyboard, get_phone_keyboard, send_order
 from states import OrderCar
-from utils import send_admin_notification
+from utils import send_admin_notification, handle_retry
 
 router = Router()
 
-last_start_calls = {}
+last_start_calls = defaultdict(float)
 
 # Команда /start
 @router.message(Command("start"))
 async def cmd_start(message: Message, state: FSMContext):
+    # Проверяем, был ли вызов менее 2 секунд назад
     user_id = message.from_user.id
     current_time = time.time()
 
-    # Проверяем, был ли вызов менее 2 секунд назад
-    if user_id in last_start_calls:
-        if current_time - last_start_calls[user_id] < 2:
-            return
+    if current_time - last_start_calls[user_id] < 2:
+        return
 
     last_start_calls[user_id] = current_time
+
+
     await state.clear()
     await message.answer(
         text="🚗 Добро пожаловать в бот Carmash!\n\n"
@@ -64,16 +66,7 @@ async def cmd_cancel(message: Message, state: FSMContext):
 @router.message(F.text == ButtonText.RETRY)
 @router.message(Command("retry"))
 async def cmd_retry(message: Message, state: FSMContext):
-    current_state = await state.get_state()
-    if current_state is None:
-        await message.answer("Нет заяок в процессе заполнения. Для новой заявки нажмите /order")
-        return
-    await state.clear()
-    await state.set_state(OrderCar.name)
-    await message.answer("🔄 Заявка сброшена 🔄\n\n"
-                         " Начинаем заполнение заявки заново!\n"
-                         "Пожалуйста, введите ваше имя:"
-                         )
+    await handle_retry(message.chat.id, state, message.bot)
 
 
 
