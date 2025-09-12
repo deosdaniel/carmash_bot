@@ -51,7 +51,11 @@ async def handle_retry(chat_id: int, state: FSMContext, bot: Bot, message_id: in
     )
 
     if message_id:
-        await bot.edit_message_text(success_text, chat_id, message_id)
+        await bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=message_id,
+            text=success_text
+        )
     else:
         await bot.send_message(chat_id, success_text)
     return True
