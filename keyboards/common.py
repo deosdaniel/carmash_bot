@@ -1,4 +1,4 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 
 
 class ButtonText:
@@ -23,3 +23,11 @@ def get_phone_keyboard() -> ReplyKeyboardMarkup:
     buttons = [button_phone]
     markup = ReplyKeyboardMarkup(keyboard=[buttons], one_time_keyboard=True)
     return markup
+
+def send_order() -> InlineKeyboardMarkup:
+    button_send = InlineKeyboardButton(text="✅ Подтвердить", callback_data="confirm")
+    button_retry = InlineKeyboardButton(text="🔄 Исправить", callback_data="retry")
+    button_cancel = InlineKeyboardButton(text="❌ Отменить", callback_data="cancel")
+    buttons_row_first = [button_send]
+    buttons_row_second = [button_retry, button_cancel]
+    return InlineKeyboardMarkup(inline_keyboard=[buttons_row_first, buttons_row_second])
