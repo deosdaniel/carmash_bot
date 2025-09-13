@@ -168,9 +168,15 @@ async def process_email(message: Message, state: FSMContext):
         return
 
     await state.update_data(email=email)
+    await state.set_state(OrderCar.city)
+    await message.answer(OrderSteps.CITY)
+
+# Обработка города
+@router.message(OrderCar.city, F.text)
+async def process_city(message: Message, state: FSMContext):
+    await state.update_data(city=message.text)
     await state.set_state(OrderCar.car_model)
     await message.answer(OrderSteps.MODEL)
-
 
 # Обработка марки/модели
 @router.message(OrderCar.car_model, F.text)
@@ -200,6 +206,7 @@ async def process_budget(message: Message, state: FSMContext, bot):
         f"👤 *Имя:* {data['name']}\n"
         f"📞 *Телефон:* {data['phone']}\n"
         f"📧 *Email:* {data['email']}\n"
+        f"🏙 *Город:* {data['city']}\n"
         f"🚗 *Марка/Модель:* {data['car_model']}\n"
         f"💰 *Бюджет:* {data['budget']} USD\n\n"
         "_Выберите действие:_"

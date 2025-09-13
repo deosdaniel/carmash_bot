@@ -4,11 +4,10 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
-from config import BOT_TOKEN, ADMIN_CHAT_ID
+from config import BOT_TOKEN, ADMIN_CHAT_ID, configure_logging
 from handlers import client_handlers, admin_handlers, callback_handlers
 
 # Настройка логирования
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Инициализация бота и диспетчера
@@ -39,6 +38,7 @@ async def on_shutdown():
 
 async def main():
     # Запускаем бота с обработкой событий
+    configure_logging(level=logging.INFO)
     try:
         await on_startup()
         await dp.start_polling(bot)
