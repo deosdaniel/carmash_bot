@@ -4,7 +4,8 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
-from config import BOT_TOKEN, ADMIN_CHAT_ID, configure_logging
+from config import BOT_TOKEN, ADMIN_CHAT_ID, DATABASE_URL, configure_logging
+from database.core import Database
 from handlers import client_handlers, admin_handlers, callback_handlers
 
 # Настройка логирования
@@ -39,6 +40,11 @@ async def on_shutdown():
 async def main():
     # Запускаем бота с обработкой событий
     configure_logging(level=logging.INFO)
+
+    db = Database(DATABASE_URL)
+    await db.create_tables()
+    logger.info("Database initialized successfully")
+
     try:
         await on_startup()
         await dp.start_polling(bot)
