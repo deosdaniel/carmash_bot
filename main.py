@@ -6,7 +6,9 @@ from aiogram.enums import ParseMode
 
 from config import BOT_TOKEN, ADMIN_CHAT_ID, DATABASE_URL, configure_logging
 from database.core import Database
+from middleware.db_middleware import DbMiddleware
 from handlers import client_handlers, admin_handlers, callback_handlers
+
 
 # Настройка логирования
 logger = logging.getLogger(__name__)
@@ -38,11 +40,11 @@ async def on_shutdown():
         logger.error(f"Ошибка при отправке сообщения админу: {e}")
 
 async def main():
-    # Запускаем бота с обработкой событий
     configure_logging(level=logging.INFO)
 
     db = Database(DATABASE_URL)
     await db.create_tables()
+    dp.update.outer_middleware(DbMiddleware(db))
     logger.info("Database initialized successfully")
 
     try:

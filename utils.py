@@ -4,26 +4,28 @@ from aiogram.fsm.context import FSMContext
 from config import ADMIN_CHAT_ID
 import logging
 
+from database.models import Order
 from states import OrderCar
 
 logger = logging.getLogger(__name__)
 
 
-async def send_admin_notification(bot: Bot, data: dict, user_id: int):
+async def send_admin_notification(bot: Bot, order: Order):
     """Функция для отправки уведомления админу"""
     try:
         admin_message = (
             "🚗 НОВАЯ ЗАЯВКА НА АВТОМОБИЛЬ!\n\n"
-            f"👤 Имя: {data['name']}\n"
-            f"📞 Телефон: {data['phone']}\n"
-            f"📧 Email: {data['email']}\n"
-            f"🚗 Марка/Модель: {data['car_model']}\n"
-            f"💰 Бюджет: {data['budget']} USD\n\n"
-            f"🆔 ID пользователя: {user_id}"
+            f"👤 Имя: {order.name}\n"
+            f"📞 Телефон: {order.phone}\n"
+            f"📧 Email: {order.email}\n"
+            f"🏙 Город: {order.city}\n"
+            f"🚗 Марка/Модель: {order.car_model}\n"
+            f"💰 Бюджет: {order.budget} RUB\n\n"
+            f"🆔 ID пользователя: {order.user_id}"
         )
 
         await bot.send_message(ADMIN_CHAT_ID, admin_message)
-        logger.info(f"Новая заявка от пользователя {user_id}")
+        logger.info(f"Новая заявка от пользователя {order.user_id}")
 
     except Exception as e:
         logger.error(f"Ошибка при отправке уведомления админу: {e}")

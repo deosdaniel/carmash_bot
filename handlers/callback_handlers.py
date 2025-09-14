@@ -5,6 +5,8 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
+from database.core import Database
+from database.order_repository import OrderRepository
 from states import OrderCar
 from utils import send_admin_notification, handle_retry
 
@@ -14,25 +16,45 @@ logger = logging.getLogger(__name__)
 
 # Обработчик подтверждения заявки
 @callback_router.callback_query(F.data == "confirm", StateFilter(OrderCar.budget))
-async def process_confirm(callback: CallbackQuery, state: FSMContext, bot: Bot):
+async def process_confirm(callback: CallbackQuery,
+                          state: FSMContext,
+                          bot: Bot,
+                          db: Database):
     # Получаем данные из состояния
     try:
-        data = await state.get_data()
-        user_id = callback.from_user.id
+        async with db.get_session() as session:
 
-        # Отправляем уведомление админу
-        await send_admin_notification(bot, data, user_id)
+            repo = OrderRepository(session)
 
-        # Очищаем состояние
-        await state.clear()
+            data = await state.get_data()
+            user = callback.from_user
 
-        # Отправляем подтверждение пользователю
-        await callback.message.edit_text(
-            "✅ Ваша заявка успешно отправлена!\n\n"
-            "Наш менеджер свяжется с вами в ближайшее время для уточнения деталей.\n\n"
-            "Для новой заявки нажмите /order",
-            reply_markup=None
-        )
+            order = await repo.create_order(
+                user_id=user.id,
+                username=user.username,
+                name=data['name'],
+                phone=data['phone'],
+                email=data['email'],
+                city=data['city'],
+                car_model=data['car_model'],
+                budget=data['budget']
+            )
+
+            logger.info(f"✅ Заявка #{order.id} сохранена в БД")
+
+            # Отправляем уведомление админу
+            await send_admin_notification(bot, order)
+
+            # Очищаем состояние
+            await state.clear()
+
+            # Отправляем подтверждение пользователю
+            await callback.message.edit_text(
+                "✅ Ваша заявка успешно отправлена!\n\n"
+                "Наш менеджер свяжется с вами в ближайшее время для уточнения деталей.\n\n"
+                "Для новой заявки нажмите /order",
+                reply_markup=None
+            )
     except Exception as e:
         logger.error(f"Error in process_confirm: {e}")
         await callback.answer("Произошла ошибка. Попробуйте позже", show_alert=True)
