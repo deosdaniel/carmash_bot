@@ -7,9 +7,8 @@ load_dotenv()
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 ADMIN_CHAT_ID = os.getenv('ADMIN_CHAT_ID')
 
-DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite+aiosqlite:///./orders.db')
-DB_TYPE = os.getenv('DB_TYPE', 'sqlite')
-DB_ECHO = os.getenv('DB_ECHO', 'false').lower() == 'true'
+DATABASE_URL = os.getenv('DATABASE_URL')
+DB_ECHO = os.getenv('DB_ECHO')
 
 
 if not BOT_TOKEN:
@@ -28,7 +27,7 @@ def configure_logging(level=logging.INFO):
     )
 
     sqlalchemy_logger = logging.getLogger('sqlalchemy.engine')
-    if DB_ECHO:
+    if DB_ECHO == "True":
         sqlalchemy_logger.setLevel(logging.INFO)
     else:
         sqlalchemy_logger.setLevel(logging.WARNING)
