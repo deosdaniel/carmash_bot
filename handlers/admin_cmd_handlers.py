@@ -109,26 +109,3 @@ async def cmd_order_detail(message: Message, db: Database):
         logger.error(f"Error in order detail action: {e}")
 
         await message.answer(ClientReplies.ERROR_ALERT, show_alert=True)
-
-
-#
-#@router.message(Command("restart"))
-#async def cmd_restart(message: Message):
-#    """Перезапуск бота"""
-#    if not is_admin(message.chat.id):
-#        return
-#
-#    await message.answer("🔄 Перезапускаю бота...")
-#    logger.info("Бот перезапущен по команде админа")
-#    # Здесь можно добавить логику перезапуска
-#
-#
-#@router.message(Command("stop"))
-#async def cmd_stop(message: Message):
-#    """Остановка бота"""
-#    if not is_admin(message.chat.id):
-#        return
-#
-#    await message.answer("🛑 Останавливаю бота...")
-#    logger.info("Бот остановлен по команде админа")
-#    # sys.exit(0) - лучше не использовать, может вызвать проблемы

@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher
+from aiogram.types import BotCommand, BotCommandScope, BotCommandScopeDefault, BotCommandScopeChat
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
@@ -15,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 # Инициализация бота и диспетчера
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+
 dp = Dispatcher()
 
 # Включаем роутеры
@@ -28,6 +30,10 @@ dp.include_router(client_callback_handlers.client_callback_router)
 
 async def on_startup():
     try:
+        admin_commands = [
+            BotCommand(command="orders", description="📊 Список заявок"),
+        ]
+        await bot.set_my_commands(admin_commands, BotCommandScopeChat(chat_id=ADMIN_CHAT_ID))
         # Отправляем сообщение админу при запуске бота
         await bot.send_message(ADMIN_CHAT_ID, "🤖 Бот запущен и готов к работе!")
         logger.info(msg="Bot is running")
