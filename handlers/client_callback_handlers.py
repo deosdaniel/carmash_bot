@@ -5,18 +5,22 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
+from config import ADMIN_CHAT_ID
 from database.core import Database
 from database.order_repository import OrderRepository
+from handlers.filters import IsAdminChatFilter
 from states import OrderCar
 from utils.texts import ClientReplies
 from utils.utils import send_admin_notification, handle_retry
 
-callback_router = Router(name="client_callback_handlers")
+client_callback_router = Router(name="client_callback_handlers")
+client_callback_router.callback_query.filter(~IsAdminChatFilter(ADMIN_CHAT_ID))
 
 logger = logging.getLogger(__name__)
 
+
 # Обработчик подтверждения заявки
-@callback_router.callback_query(F.data == "confirm", StateFilter(OrderCar.budget))
+@client_callback_router.callback_query(F.data == "confirm", StateFilter(OrderCar.budget))
 async def process_confirm(callback: CallbackQuery,
                           state: FSMContext,
                           bot: Bot,
@@ -62,7 +66,7 @@ async def process_confirm(callback: CallbackQuery,
 
 
 # Обработчик исправления заявки
-@callback_router.callback_query(F.data == "retry", StateFilter(OrderCar.budget))
+@client_callback_router.callback_query(F.data == "retry", StateFilter(OrderCar.budget))
 async def process_retry(callback: CallbackQuery, state: FSMContext):
     try:
         await handle_retry(callback.message.chat.id, state, callback.bot, callback.message.message_id)
@@ -72,7 +76,7 @@ async def process_retry(callback: CallbackQuery, state: FSMContext):
     finally:
         await callback.answer()
 
-@callback_router.callback_query(F.data == "cancel", StateFilter(OrderCar.budget))
+@client_callback_router.callback_query(F.data == "cancel", StateFilter(OrderCar.budget))
 async def process_cancel(callback: CallbackQuery, state: FSMContext):
     try:
         await state.clear()

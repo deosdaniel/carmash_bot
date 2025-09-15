@@ -7,7 +7,7 @@ from aiogram.enums import ParseMode
 from config import BOT_TOKEN, ADMIN_CHAT_ID, DATABASE_URL, configure_logging
 from database.core import Database
 from middleware.db_middleware import DbMiddleware
-from handlers import client_cmd_handlers, admin_handlers, client_callback_handlers, order_fsm_handlers
+from handlers import admin_cmd_handlers, admin_callback_handlers, order_fsm_handlers, client_callback_handlers, client_cmd_handlers
 
 
 # Настройка логирования
@@ -19,11 +19,11 @@ dp = Dispatcher()
 
 # Включаем роутеры
 
-dp.include_router(admin_handlers.admin_router)
-dp.include_router(client_cmd_handlers.client_router)
+dp.include_router(admin_cmd_handlers.admin_cmd_router)
+dp.include_router(admin_callback_handlers.admin_callback_router)
+dp.include_router(client_cmd_handlers.client_cmd_router)
 dp.include_router(order_fsm_handlers.router)
-
-dp.include_router(client_callback_handlers.callback_router)
+dp.include_router(client_callback_handlers.client_callback_router)
 
 
 async def on_startup():

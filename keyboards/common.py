@@ -36,12 +36,12 @@ def get_send_order_keyboard() -> InlineKeyboardMarkup:
 
 
 def get_admin_order_keyboard(order_id: int) -> InlineKeyboardMarkup:
-    button_call_client = InlineKeyboardButton(text="📞 Позвонить клиенту",
-                                              callback_data=f"call_{order_id}")
+    #button_call_client = InlineKeyboardButton(text="📞 Позвонить клиенту",
+    #                                          callback_data=f"call_{order_id}")
     button_complete_order = InlineKeyboardButton(text="✅ Заявка принята",
                                                  callback_data=f"complete_{order_id}")
     button_drop_order = InlineKeyboardButton(text="❌ Отказ",
                                              callback_data=f"drop_{order_id}")
-    buttons_row_first = [button_call_client]
+    #buttons_row_first = [button_call_client]
     buttons_row_second = [button_complete_order, button_drop_order]
-    return InlineKeyboardMarkup(inline_keyboard=[buttons_row_first, buttons_row_second])
+    return InlineKeyboardMarkup(inline_keyboard=[buttons_row_second])
