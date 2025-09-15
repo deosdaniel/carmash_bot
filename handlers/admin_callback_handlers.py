@@ -7,7 +7,7 @@ from sqlalchemy import update
 from config import ADMIN_CHAT_ID
 from database.core import Database
 from database.models import Order
-from handlers.filters import IsAdminChatFilter
+from utils.filters import IsAdminChatFilter
 from utils.texts import ClientReplies, OrderStatus
 
 logger = logging.getLogger(__name__)

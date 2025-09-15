@@ -10,7 +10,7 @@ import logging
 
 from database.core import Database
 from database.models import Order
-from handlers.filters import IsAdminChatFilter
+from utils.filters import IsAdminChatFilter
 from keyboards.common import get_admin_order_keyboard
 from utils.texts import ClientReplies
 

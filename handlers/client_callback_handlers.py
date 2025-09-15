@@ -8,7 +8,7 @@ from aiogram.types import CallbackQuery
 from config import ADMIN_CHAT_ID
 from database.core import Database
 from database.order_repository import OrderRepository
-from handlers.filters import IsAdminChatFilter
+from utils.filters import IsAdminChatFilter
 from states import OrderCar
 from utils.texts import ClientReplies
 from utils.utils import send_admin_notification, handle_retry

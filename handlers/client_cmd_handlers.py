@@ -7,7 +7,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 
 from config import ADMIN_CHAT_ID
-from handlers.filters import IsAdminChatFilter
+from utils.filters import IsAdminChatFilter
 from keyboards.common import get_on_start_keyboard
 from states import OrderCar
 from utils.utils import  handle_retry
