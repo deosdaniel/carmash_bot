@@ -6,6 +6,7 @@ import logging
 
 from database.models import Order
 from states import OrderCar
+from utils.texts import ClientReplies
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,7 @@ async def handle_retry(chat_id: int, state: FSMContext, bot: Bot, message_id: in
     current_state = await state.get_state()
 
     if current_state is None:
-        error_text = "Нет заявок в процессе заполнения. Для новой заявки нажмите /order"
+        error_text = ClientReplies.RETRY_NO_ORDERS
         if message_id:
             await bot.edit_message_text(error_text, chat_id, message_id)
         else:
@@ -46,12 +47,7 @@ async def handle_retry(chat_id: int, state: FSMContext, bot: Bot, message_id: in
     await state.clear()
     await state.set_state(OrderCar.name)
 
-    success_text = (
-        "🔄 Заявка сброшена 🔄\n\n"
-        "Начинаем заполнение заявки заново!\n"
-        "Пожалуйста, введите ваше имя:"
-    )
-
+    success_text = ClientReplies.RETRY_SUCCESS
     if message_id:
         await bot.edit_message_text(
             chat_id=chat_id,

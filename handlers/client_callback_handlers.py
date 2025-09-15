@@ -8,9 +8,10 @@ from aiogram.types import CallbackQuery
 from database.core import Database
 from database.order_repository import OrderRepository
 from states import OrderCar
-from utils import send_admin_notification, handle_retry
+from utils.texts import ClientReplies
+from utils.utils import send_admin_notification, handle_retry
 
-callback_router = Router()
+callback_router = Router(name="client_callback_handlers")
 
 logger = logging.getLogger(__name__)
 
@@ -50,14 +51,12 @@ async def process_confirm(callback: CallbackQuery,
 
             # Отправляем подтверждение пользователю
             await callback.message.edit_text(
-                "✅ Ваша заявка успешно отправлена!\n\n"
-                "Наш менеджер свяжется с вами в ближайшее время для уточнения деталей.\n\n"
-                "Для новой заявки нажмите /order",
+                ClientReplies.CONFIRM_INLINE,
                 reply_markup=None
             )
     except Exception as e:
         logger.error(f"Error in process_confirm: {e}")
-        await callback.answer("Произошла ошибка. Попробуйте позже", show_alert=True)
+        await callback.answer(ClientReplies.ERROR_ALERT, show_alert=True)
     finally:
         await callback.answer()
 
@@ -69,7 +68,7 @@ async def process_retry(callback: CallbackQuery, state: FSMContext):
         await handle_retry(callback.message.chat.id, state, callback.bot, callback.message.message_id)
     except Exception as e:
         logger.error(f"Error in process_retry: {e}")
-        await callback.answer("Произошла ошибка. Попробуйте позже", show_alert=True)
+        await callback.answer(ClientReplies.ERROR_ALERT, show_alert=True)
     finally:
         await callback.answer()
 
@@ -78,11 +77,10 @@ async def process_cancel(callback: CallbackQuery, state: FSMContext):
     try:
         await state.clear()
         await callback.message.edit_text(
-        "❌ Заявка отменена.\n\n"
-        "Если передумаете - нажмите /order для новой заявки"
+        ClientReplies.CANCEL_INLINE, reply_markup=None
     )
     except Exception as e:
         logger.error(f"Error in process_cancel: {e}")
-        await callback.answer("Произошла ошибка. Попробуйте позже", show_alert=True)
+        await callback.answer(ClientReplies.ERROR_ALERT, show_alert=True)
     finally:
         await callback.answer()
