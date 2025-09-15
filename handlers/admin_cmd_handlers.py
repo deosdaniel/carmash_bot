@@ -39,7 +39,6 @@ async def cmd_admin(message: Message):
 
 @admin_cmd_router.message(Command("id"))
 async def cmd_id(message: Message):
-    """Показывает ID текущего чата"""
     await message.answer(f"🆔 ID этого чата: <code>{message.chat.id}</code>")
 
 

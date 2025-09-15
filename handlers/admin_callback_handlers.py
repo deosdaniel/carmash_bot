@@ -21,7 +21,6 @@ async def handle_call_action(callback: CallbackQuery, db: Database):
     try:
         order_id = int(callback.data.split("_")[1])
         async with db.get_session() as session:
-            # Получаем заявку из БД
             order = await session.get(Order, order_id)
             await callback.answer(f"Звоним клиенту: {order.phone}")
         logger.info(f"☎️ Звонок клиенту")

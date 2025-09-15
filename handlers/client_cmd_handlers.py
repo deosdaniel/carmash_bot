@@ -8,10 +8,10 @@ from aiogram.fsm.context import FSMContext
 
 from config import ADMIN_CHAT_ID
 from handlers.filters import IsAdminChatFilter
-from keyboards.common import ButtonText, get_on_start_keyboard
+from keyboards.common import get_on_start_keyboard
 from states import OrderCar
 from utils.utils import  handle_retry
-from utils.texts import OrderSteps, ClientReplies
+from utils.texts import OrderSteps, ClientReplies, ButtonText
 
 client_cmd_router = Router(name="client_cmd_handlers")
 client_cmd_router.message.filter(~IsAdminChatFilter(ADMIN_CHAT_ID))

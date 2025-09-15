@@ -1,12 +1,6 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 
-
-class ButtonText:
-    ORDER = "🚗 Оформить заявку"
-    RETRY = "🔄 Заполнить заново"
-    CANCEL = "❌ Отмена"
-    HELP = "❓ Справка"
-    SEND_PHONE = "📞Оставить свой номер из Telegram"
+from utils.texts import ButtonText
 
 
 def get_on_start_keyboard() -> ReplyKeyboardMarkup:

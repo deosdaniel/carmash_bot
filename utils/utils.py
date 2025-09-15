@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 async def send_admin_notification(bot: Bot, order: Order):
-    """Функция для отправки уведомления админу"""
     try:
         admin_message = (
             "🚗 НОВАЯ ЗАЯВКА НА АВТОМОБИЛЬ!\n\n"
@@ -36,7 +35,6 @@ async def send_admin_notification(bot: Bot, order: Order):
 
 
 async def handle_retry(chat_id: int, state: FSMContext, bot: Bot, message_id: int = None):
-    """Универсальная обработка перезапуска"""
     current_state = await state.get_state()
 
     if current_state is None:

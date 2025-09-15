@@ -19,13 +19,11 @@ client_callback_router.callback_query.filter(~IsAdminChatFilter(ADMIN_CHAT_ID))
 logger = logging.getLogger(__name__)
 
 
-# Обработчик подтверждения заявки
 @client_callback_router.callback_query(F.data == "confirm", StateFilter(OrderCar.budget))
 async def process_confirm(callback: CallbackQuery,
                           state: FSMContext,
                           bot: Bot,
                           db: Database):
-    # Получаем данные из состояния
     try:
         async with db.get_session() as session:
 
@@ -47,13 +45,10 @@ async def process_confirm(callback: CallbackQuery,
 
             logger.info(f"✅ Заявка #{order.id} сохранена в БД")
 
-            # Отправляем уведомление админу
             await send_admin_notification(bot, order)
 
-            # Очищаем состояние
             await state.clear()
 
-            # Отправляем подтверждение пользователю
             await callback.message.edit_text(
                 ClientReplies.CONFIRM_INLINE,
                 reply_markup=None
@@ -65,7 +60,6 @@ async def process_confirm(callback: CallbackQuery,
         await callback.answer()
 
 
-# Обработчик исправления заявки
 @client_callback_router.callback_query(F.data == "retry", StateFilter(OrderCar.budget))
 async def process_retry(callback: CallbackQuery, state: FSMContext):
     try:
