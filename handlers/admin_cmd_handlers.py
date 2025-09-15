@@ -17,10 +17,8 @@ from utils.texts import ClientReplies
 logger = logging.getLogger(__name__)
 
 admin_cmd_router = Router(name="admin_cmd_handlers")
-
 admin_cmd_router.message.filter(IsAdminChatFilter(ADMIN_CHAT_ID))
 
-admin_cmd_router.callback_query.filter(IsAdminChatFilter(ADMIN_CHAT_ID))
 
 
 @admin_cmd_router.message(Command("admin"))

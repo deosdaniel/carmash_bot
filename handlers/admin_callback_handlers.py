@@ -13,9 +13,6 @@ from utils.texts import ClientReplies, OrderStatus
 logger = logging.getLogger(__name__)
 
 admin_callback_router = Router(name="admin_callback_handlers")
-
-admin_callback_router.message.filter(IsAdminChatFilter(ADMIN_CHAT_ID))
-
 admin_callback_router.callback_query.filter(IsAdminChatFilter(ADMIN_CHAT_ID))
 
 
