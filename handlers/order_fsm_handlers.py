@@ -3,7 +3,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
 from utils.texts import OrderSteps
-from keyboards.common import get_phone_keyboard, send_order
+from keyboards.common import get_phone_keyboard, get_send_order_keyboard
 from states import OrderCar
 
 
@@ -107,5 +107,5 @@ async def process_budget(message: Message, state: FSMContext, bot):
     await message.answer(
         confirmation_text,
         parse_mode="Markdown",
-        reply_markup=send_order()
+        reply_markup=get_send_order_keyboard()
     )

@@ -6,18 +6,22 @@ from aiogram.types import Message
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 
+from config import ADMIN_CHAT_ID
+from handlers.filters import IsAdminChatFilter
 from keyboards.common import ButtonText, get_on_start_keyboard
 from states import OrderCar
 from utils.utils import  handle_retry
 from utils.texts import OrderSteps, ClientReplies
 
-router = Router(name="client_cmd_handlers")
+client_router = Router(name="client_cmd_handlers")
+
+client_router.message.filter(~IsAdminChatFilter(ADMIN_CHAT_ID))
 
 last_start_calls = defaultdict(float)
 
 
 # Команда /start
-@router.message(Command("start"))
+@client_router.message(Command("start"))
 async def cmd_start(message: Message, state: FSMContext):
     # Проверяем, был ли вызов менее 2 секунд назад
     user_id = message.from_user.id
@@ -52,16 +56,16 @@ async def cmd_start(message: Message, state: FSMContext):
         )
 
 # Команда /help - справка
-@router.message(F.text == ButtonText.HELP)
-@router.message(Command("help"))
+@client_router.message(F.text == ButtonText.HELP)
+@client_router.message(Command("help"))
 async def cmd_help(message: Message, state: FSMContext):
     await state.clear()
     await message.answer(text=ClientReplies.HELP)
 
 
 # Команда /cancel - отмена заявки
-@router.message(F.text == ButtonText.CANCEL)
-@router.message(Command("cancel"))
+@client_router.message(F.text == ButtonText.CANCEL)
+@client_router.message(Command("cancel"))
 async def cmd_cancel(message: Message, state: FSMContext):
     current_state = await state.get_state()
     if current_state is None:
@@ -71,16 +75,16 @@ async def cmd_cancel(message: Message, state: FSMContext):
     await message.answer(ClientReplies.CANCEL_SUCCESS)
 
 # Команда /retry - заполнить заявку заново при ошибке
-@router.message(F.text == ButtonText.RETRY)
-@router.message(Command("retry"))
+@client_router.message(F.text == ButtonText.RETRY)
+@client_router.message(Command("retry"))
 async def cmd_retry(message: Message, state: FSMContext):
     await handle_retry(message.chat.id, state, message.bot)
 
 
 
 # Команда /order - начало оформления заявки
-@router.message(F.text == ButtonText.ORDER)
-@router.message(Command("order"))
+@client_router.message(F.text == ButtonText.ORDER)
+@client_router.message(Command("order"))
 async def cmd_order(message: Message, state: FSMContext):
     await state.set_state(OrderCar.name)
     await message.answer(

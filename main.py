@@ -18,9 +18,11 @@ bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTM
 dp = Dispatcher()
 
 # Включаем роутеры
-dp.include_router(client_cmd_handlers.router)
+
+dp.include_router(admin_handlers.admin_router)
+dp.include_router(client_cmd_handlers.client_router)
 dp.include_router(order_fsm_handlers.router)
-dp.include_router(admin_handlers.router)
+
 dp.include_router(client_callback_handlers.callback_router)
 
 

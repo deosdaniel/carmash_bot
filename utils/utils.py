@@ -5,6 +5,7 @@ from config import ADMIN_CHAT_ID
 import logging
 
 from database.models import Order
+from keyboards.common import get_admin_order_keyboard
 from states import OrderCar
 from utils.texts import ClientReplies
 
@@ -25,7 +26,9 @@ async def send_admin_notification(bot: Bot, order: Order):
             f"🆔 ID пользователя: {order.user_id}"
         )
 
-        await bot.send_message(ADMIN_CHAT_ID, admin_message)
+        await bot.send_message(chat_id=ADMIN_CHAT_ID,
+                               text=admin_message,
+                               reply_markup=get_admin_order_keyboard(order_id=order.id))
         logger.info(f"Новая заявка от пользователя {order.user_id}")
 
     except Exception as e:

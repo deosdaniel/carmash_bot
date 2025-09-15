@@ -1,31 +1,37 @@
+from select import select
+
 from aiogram import Router, F
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
-from aiogram.fsm.context import FSMContext
+from aiogram.utils.markdown import hbold, hlink
+from sqlalchemy import update, select
 from config import ADMIN_CHAT_ID
 import logging
 
-router = Router()
+from database.core import Database
+from database.models import Order
+from handlers.filters import IsAdminChatFilter
+from keyboards.common import get_admin_order_keyboard
+from utils.texts import ClientReplies, OrderStatus
+
+
 logger = logging.getLogger(__name__)
 
+admin_router = Router(name="admin_handlers")
 
-def is_admin(chat_id: int) -> bool:
-    """Проверяет, является ли чат админским"""
-    return str(chat_id) == ADMIN_CHAT_ID
+admin_router.message.filter(IsAdminChatFilter(ADMIN_CHAT_ID))
+admin_router.callback_query.filter(IsAdminChatFilter(ADMIN_CHAT_ID))
 
 
-@router.message(Command("admin"))
+@admin_router.message(Command("admin"))
 async def cmd_admin(message: Message):
-    if not is_admin(message.chat.id):
-        return
 
     await message.answer(
         "👨‍💼 <b>Панель администратора</b>\n\n"
         "📊 <b>Доступные команды:</b>\n"
-        "/stats - статистика заявок\n"
-        "/users - количество пользователей\n"
-        "/broadcast - рассылка сообщений\n"
-        "/id - получить ID этого чата\n\n"
+        "/id - получить ID этого чата\n"
+        "/orders - получить список всех заявок\n"
+        "/order <номер_заявки> - получить инфо по кокретной заявке\n\n"
         "⚙️ <b>Управление ботом:</b>\n"
         "/restart - перезапустить бота\n"
         "/stop - остановить бота\n\n"
@@ -33,81 +39,139 @@ async def cmd_admin(message: Message):
     )
 
 
-@router.message(Command("id"))
+@admin_router.message(Command("id"))
 async def cmd_id(message: Message):
     """Показывает ID текущего чата"""
-    if not is_admin(message.chat.id):
-        return
-
     await message.answer(f"🆔 ID этого чата: <code>{message.chat.id}</code>")
 
 
-@router.message(Command("stats"))
-async def cmd_stats(message: Message):
-    """Статистика бота"""
-    if not is_admin(message.chat.id):
-        return
+@admin_router.callback_query(F.data.startswith("call_"))
+async def handle_call_action(callback: CallbackQuery, db: Database):
+    try:
+        order_id = int(callback.data.split("_")[1])
+        async with db.get_session() as session:
+            # Получаем заявку из БД
+            order = await session.get(Order, order_id)
+            await callback.answer(f"Звоним клиенту: {order.phone}")
+        logger.info(f"☎️ Звонок клиенту")
+    except Exception as e:
+        logger.error(f"Error in call client action: {e}")
+        await callback.answer(ClientReplies.ERROR_ALERT, show_alert=True)
+    finally:
 
-    # Здесь можно добавить реальную статистику из БД
-    stats_text = (
-        "📊 <b>Статистика бота</b>\n\n"
-        "👥 Пользователей: 150\n"
-        "🚗 Заявок сегодня: 12\n"
-        "✅ Одобренных: 8\n"
-        "⏳ В обработке: 4\n"
-        "📅 Всего заявок: 89"
-    )
-    await message.answer(stats_text)
-
-
-@router.message(Command("users"))
-async def cmd_users(message: Message):
-    """Информация о пользователях"""
-    if not is_admin(message.chat.id):
-        return
-
-    users_info = (
-        "👥 <b>Информация о пользователях</b>\n\n"
-        "🌍 Всего пользователей: 150\n"
-        "🆕 Новых за сегодня: 5\n"
-        "📱 Активных за неделю: 34\n"
-        "🚗 Сделали заявки: 89\n"
-        "📊 Конверсия: 59.3%"
-    )
-    await message.answer(users_info)
+        await callback.answer()
 
 
-@router.message(Command("broadcast"))
-async def cmd_broadcast(message: Message, state: FSMContext):
-    """Начало процесса рассылки"""
-    if not is_admin(message.chat.id):
-        return
+@admin_router.callback_query(F.data.startswith("complete_"))
+async def handle_complete_action(callback: CallbackQuery, db: Database):
+    try:
+        order_id = int(callback.data.split("_")[1])
+        async with db.get_session() as session:
+            await session.execute(
+                update(Order)
+                .where(Order.id == order_id)
+                .values(status=OrderStatus.COMPLETED)
+            )
+            await session.commit()
 
-    await message.answer(
-        "📢 <b>Рассылка сообщений</b>\n\n"
-        "Отправьте сообщение для рассылки всем пользователям:\n"
-        "(текст, фото, документ - что угодно)"
-    )
-    # Здесь можно установить состояние для рассылки
+        await callback.answer("Заявка завершена!")
+        await callback.message.edit_text(
+            f"✅ {callback.message.text}\n\n🏁 Заявка принята администратором",
+            parse_mode="HTML"
+        )
+
+    except Exception as e:
+        logger.error(f"Error in complete order action: {e}")
+        await callback.answer(ClientReplies.ERROR_ALERT, show_alert=True)
+    finally:
+        await callback.answer()
 
 
-@router.message(Command("restart"))
-async def cmd_restart(message: Message):
-    """Перезапуск бота"""
-    if not is_admin(message.chat.id):
-        return
+@admin_router.callback_query(F.data.startswith("drop_"))
+async def handle_drop_order(callback: CallbackQuery, db: Database):
+    try:
+        order_id = int(callback.data.split("_")[1])
+        async with db.get_session() as session:
+            await session.execute(
+                update(Order)
+                .where(Order.id == order_id)
+                .values(status=OrderStatus.REJECTED)
+            )
+            await session.commit()
+        await callback.answer("Заявка закрыта!")
+        await callback.message.edit_text(
+            f"❌ {callback.message.text}\n\n🏁 Заявка закрыта администратором",
+            parse_mode="HTML"
+        )
+    except Exception as e:
+        logger.error(f"Error in drop order action: {e}")
+        await callback.answer(ClientReplies.ERROR_ALERT, show_alert=True)
+    finally:
+        await callback.answer()
 
-    await message.answer("🔄 Перезапускаю бота...")
-    logger.info("Бот перезапущен по команде админа")
-    # Здесь можно добавить логику перезапуска
+@admin_router.message(Command("orders"))
+async def cmd_orders(message: Message, db: Database):
+    try:
+        async with db.get_session() as session:
+            orders = await session.execute(select(Order).order_by(Order.created_at.desc()))
+            orders_list = orders.scalars().all()
+            if not orders_list:
+                await message.answer("Заявок пока нет")
+                return
+            response = "📋 Список всех заявок:\n\n"
+            for order in orders_list:
+                response += f"#{order.id} | {order.name} | {order.phone} | {order.city} | {order.car_model} | {order.status}\n"
+            await message.answer(response)
+    except Exception as e:
+        logger.error(f"Error in get orders action: {e}")
+        await message.answer(ClientReplies.ERROR_ALERT, show_alert=True)
+
+@admin_router.message(Command("order"))
+async def cmd_order_detail(message: Message, db: Database):
+    try:
+        order_id = int(message.text.split()[1])
+        async with db.get_session() as session:
+            order = await session.get(Order, order_id)
+            if not order:
+                await message.answer("Не нашли заявку по этому номеру 😔\n\n"
+                                     "Использование: /order <ID_заявки>")
+                return
+
+            detail_text = (
+                f"📋 {hbold('Детали заявки')} #{order.id}\n\n"
+                f"👤 {hbold('Клиент:')} {order.name}\n"
+                f"📞 {hbold('Телефон:')} {hlink(order.phone, f'tel:{order.phone}')}\n"
+                f"📧 {hbold('Email:')} {order.email}\n"
+                f"🚗 {hbold('Автомобиль:')} {order.car_model}\n"
+                f"💰 {hbold('Бюджет:')} {order.budget} USD\n"
+                f"⏰ {hbold('Создана:')} {order.created_at.strftime('%d.%m.%Y %H:%M')}\n"
+                f"📊 {hbold('Статус:')} {order.status}"
+            )
+            await message.answer(detail_text, parse_mode="HTML", reply_markup=get_admin_order_keyboard(order_id=order.id))
+    except Exception as e:
+        logger.error(f"Error in order detail action: {e}")
+
+        await message.answer(ClientReplies.ERROR_ALERT, show_alert=True)
 
 
-@router.message(Command("stop"))
-async def cmd_stop(message: Message):
-    """Остановка бота"""
-    if not is_admin(message.chat.id):
-        return
-
-    await message.answer("🛑 Останавливаю бота...")
-    logger.info("Бот остановлен по команде админа")
-    # sys.exit(0) - лучше не использовать, может вызвать проблемы
+#
+#@router.message(Command("restart"))
+#async def cmd_restart(message: Message):
+#    """Перезапуск бота"""
+#    if not is_admin(message.chat.id):
+#        return
+#
+#    await message.answer("🔄 Перезапускаю бота...")
+#    logger.info("Бот перезапущен по команде админа")
+#    # Здесь можно добавить логику перезапуска
+#
+#
+#@router.message(Command("stop"))
+#async def cmd_stop(message: Message):
+#    """Остановка бота"""
+#    if not is_admin(message.chat.id):
+#        return
+#
+#    await message.answer("🛑 Останавливаю бота...")
+#    logger.info("Бот остановлен по команде админа")
+#    # sys.exit(0) - лучше не использовать, может вызвать проблемы

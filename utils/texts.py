@@ -6,6 +6,12 @@ class OrderSteps:
     MODEL = "✅ Здорово, мы почти закончили\n\n🚗 Введите желаемую марку и/или модель автомобиля:"
     BUDGET = "✅ Финальный штрих\n\n💰 Введите ваш бюджет (в RUB):"
 
+class OrderStatus:
+    NEW = "new"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    REJECTED = "rejected"
+
 class ClientReplies:
     START = (
         "🚗 Добро пожаловать в бот Carmash! 🚗\n\n"
