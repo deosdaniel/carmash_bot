@@ -10,6 +10,7 @@ import logging
 
 from database.core import Database
 from database.models import Order
+from database.order_repository import OrderRepository
 from utils.filters import IsAdminChatFilter
 from keyboards.common import get_admin_order_keyboard
 from utils.texts import ClientReplies
@@ -46,8 +47,8 @@ async def cmd_id(message: Message):
 async def cmd_orders(message: Message, db: Database):
     try:
         async with db.get_session() as session:
-            orders = await session.execute(select(Order).order_by(Order.created_at.desc()))
-            orders_list = orders.scalars().all()
+            repo = OrderRepository(session=session)
+            orders_list = await repo.get_all_orders()
             if not orders_list:
                 await message.answer("Заявок пока нет")
                 return
@@ -63,7 +64,6 @@ async def cmd_orders(message: Message, db: Database):
 async def cmd_order_detail(message: Message, db: Database):
     try:
         msg_parts = message.text.split()
-
         if len(msg_parts) < 2:
             await message.answer(
                 "📋 <b>Использование команды:</b>\n\n"
@@ -85,7 +85,8 @@ async def cmd_order_detail(message: Message, db: Database):
             return
 
         async with db.get_session() as session:
-            order = await session.get(Order, order_id)
+            repo = OrderRepository(session=session)
+            order = await repo.get_order_by_id(order_id=order_id)
             if not order:
                 await message.answer("❌ <b>Заявка не найдена</b>\n\n"
                     f"Заявка с ID #{order_id} не существует.\n"

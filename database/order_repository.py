@@ -44,6 +44,12 @@ class OrderRepository:
         )
         return result.scalar_one_or_none()
 
+    async def get_all_orders(self) -> List[Order]:
+        result = await self.session.execute(
+            sa.select(Order).order_by(sa.desc(Order.created_at))
+        )
+        return result.scalars().all()
+
     async def get_user_orders(self, user_id: int) -> List[Order]:
         """Получение всех заявок пользователя"""
         result = await self.session.execute(
