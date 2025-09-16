@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, List
@@ -32,8 +34,7 @@ class OrderRepository:
         )
 
         self.session.add(order)
-        await self.session.flush()
-        await self.session.refresh(order)
+        await self.session.commit()
         return order
 
     async def get_order_by_id(self, order_id: int) -> Optional[Order]:
@@ -55,7 +56,7 @@ class OrderRepository:
     async def get_recent_orders(self, hours: int = 24) -> List[Order]:
         """Получение свежих заявок"""
         from sqlalchemy import func
-        recent_time = func.datetime('now', f'-{hours} hours')
+        recent_time = datetime.now() - timedelta(hours=hours)
 
         result = await self.session.execute(
             sa.select(Order)
@@ -69,6 +70,5 @@ class OrderRepository:
         order = await self.get_order_by_id(order_id)
         if order:
             order.status = status
-            await self.session.flush()
-            await self.session.refresh(order)
+            await self.session.commit()
         return order

@@ -53,22 +53,20 @@ async def process_confirm(callback: CallbackQuery,
                 ClientReplies.CONFIRM_INLINE,
                 reply_markup=None
             )
+            await callback.answer()
     except Exception as e:
         logger.error(f"Error in process_confirm: {e}")
         await callback.answer(ClientReplies.ERROR_ALERT, show_alert=True)
-    finally:
-        await callback.answer()
 
 
 @client_callback_router.callback_query(F.data == "retry", StateFilter(OrderCar.budget))
 async def process_retry(callback: CallbackQuery, state: FSMContext):
     try:
         await handle_retry(callback.message.chat.id, state, callback.bot, callback.message.message_id)
+        await callback.answer()
     except Exception as e:
         logger.error(f"Error in process_retry: {e}")
         await callback.answer(ClientReplies.ERROR_ALERT, show_alert=True)
-    finally:
-        await callback.answer()
 
 @client_callback_router.callback_query(F.data == "cancel", StateFilter(OrderCar.budget))
 async def process_cancel(callback: CallbackQuery, state: FSMContext):
@@ -77,8 +75,7 @@ async def process_cancel(callback: CallbackQuery, state: FSMContext):
         await callback.message.edit_text(
         ClientReplies.CANCEL_INLINE, reply_markup=None
     )
+        await callback.answer()
     except Exception as e:
         logger.error(f"Error in process_cancel: {e}")
         await callback.answer(ClientReplies.ERROR_ALERT, show_alert=True)
-    finally:
-        await callback.answer()

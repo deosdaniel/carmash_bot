@@ -33,7 +33,7 @@ async def cmd_start(message: Message, state: FSMContext):
 
     current_state = await state.get_state()
 
-    if current_state:
+    if current_state and current_state != OrderCar.name:
         state_to_message = {
             "OrderCar:name": OrderSteps.NAME,
             "OrderCar:phone": OrderSteps.PHONE,

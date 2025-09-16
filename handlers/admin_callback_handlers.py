@@ -24,12 +24,10 @@ async def handle_call_action(callback: CallbackQuery, db: Database):
             order = await session.get(Order, order_id)
             await callback.answer(f"Звоним клиенту: {order.phone}")
         logger.info(f"☎️ Звонок клиенту")
+        await callback.answer()
     except Exception as e:
         logger.error(f"Error in call client action: {e}")
         await callback.answer(ClientReplies.ERROR_ALERT, show_alert=True)
-    finally:
-
-        await callback.answer()
 
 
 @admin_callback_router.callback_query(F.data.startswith("complete_"))
@@ -49,12 +47,10 @@ async def handle_complete_action(callback: CallbackQuery, db: Database):
             f"✅ {callback.message.text}\n\n🏁 Заявка принята администратором",
             parse_mode="HTML"
         )
-
+        await callback.answer()
     except Exception as e:
         logger.error(f"Error in complete order action: {e}")
         await callback.answer(ClientReplies.ERROR_ALERT, show_alert=True)
-    finally:
-        await callback.answer()
 
 
 @admin_callback_router.callback_query(F.data.startswith("drop_"))
@@ -73,8 +69,7 @@ async def handle_drop_order(callback: CallbackQuery, db: Database):
             f"❌ {callback.message.text}\n\n🏁 Заявка закрыта администратором",
             parse_mode="HTML"
         )
+        await callback.answer()
     except Exception as e:
         logger.error(f"Error in drop order action: {e}")
         await callback.answer(ClientReplies.ERROR_ALERT, show_alert=True)
-    finally:
-        await callback.answer()
