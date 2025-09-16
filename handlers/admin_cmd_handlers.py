@@ -1,15 +1,11 @@
-from select import select
-
 from aiogram import Router
 from aiogram.types import Message
 from aiogram.filters import Command
 from aiogram.utils.markdown import hbold, hlink
-from sqlalchemy import select
 from config import ADMIN_CHAT_ID
 import logging
 
 from database.core import Database
-from database.models import Order
 from database.order_repository import OrderRepository
 from utils.filters import IsAdminChatFilter
 from keyboards.common import get_admin_order_keyboard

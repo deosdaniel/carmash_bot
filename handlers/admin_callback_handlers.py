@@ -47,7 +47,6 @@ async def handle_complete_action(callback: CallbackQuery, db: Database):
             f"✅ {callback.message.text}\n\n🏁 Заявка принята администратором",
             parse_mode="HTML"
         )
-        await callback.answer()
     except Exception as e:
         logger.error(f"Error in complete order action: {e}")
         await callback.answer(ClientReplies.ERROR_ALERT, show_alert=True)
@@ -69,7 +68,6 @@ async def handle_drop_order(callback: CallbackQuery, db: Database):
             f"❌ {callback.message.text}\n\n🏁 Заявка закрыта администратором",
             parse_mode="HTML"
         )
-        await callback.answer()
     except Exception as e:
         logger.error(f"Error in drop order action: {e}")
         await callback.answer(ClientReplies.ERROR_ALERT, show_alert=True)

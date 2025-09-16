@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, List
-from .models import Order  # Импортируем модель
+from .models import Order
 
 
 class OrderRepository:
