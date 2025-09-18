@@ -7,7 +7,8 @@ from aiogram.types import CallbackQuery
 
 from config import ADMIN_CHAT_ID
 from database.core import Database
-from database.repositories import OrderRepository
+from database.schemas import OrderCreateSchema
+from database.service import OrderService
 from utils.filters import IsAdminChatFilter
 from states import OrderCar
 from utils.texts import ClientReplies
@@ -19,20 +20,19 @@ client_callback_router.callback_query.filter(~IsAdminChatFilter(ADMIN_CHAT_ID))
 logger = logging.getLogger(__name__)
 
 
-@client_callback_router.callback_query(F.data == "confirm", StateFilter(OrderCar.budget))
-async def process_confirm(callback: CallbackQuery,
-                          state: FSMContext,
-                          bot: Bot,
-                          db: Database):
+@client_callback_router.callback_query(
+    F.data == "confirm", StateFilter(OrderCar.budget)
+)
+async def process_confirm(
+    callback: CallbackQuery, state: FSMContext, bot: Bot, db: Database
+):
     async with db.async_session_factory() as session:
-        repo = OrderRepository(session)
         data = await state.get_data()
         user = callback.from_user
+        service = OrderService(session)
         try:
-            order = await repo.create_order(
-                user_id=user.id,
-                username=user.username,
-                **data
+            order = await service.create_order(
+                OrderCreateSchema(user_id=user.id, username=user.username, **data)
             )
             await session.commit()
         except Exception as e:
@@ -42,10 +42,7 @@ async def process_confirm(callback: CallbackQuery,
             return
     logger.info(f"✅ Заявка #{order.id} сохранена в БД")
     await send_admin_notification(bot, order)
-    await callback.message.edit_text(
-        ClientReplies.CONFIRM_INLINE,
-        reply_markup=None
-    )
+    await callback.message.edit_text(ClientReplies.CONFIRM_INLINE, reply_markup=None)
     await state.clear()
     await callback.answer()
 
@@ -53,19 +50,20 @@ async def process_confirm(callback: CallbackQuery,
 @client_callback_router.callback_query(F.data == "retry", StateFilter(OrderCar.budget))
 async def process_retry(callback: CallbackQuery, state: FSMContext):
     try:
-        await handle_retry(callback.message.chat.id, state, callback.bot, callback.message.message_id)
+        await handle_retry(
+            callback.message.chat.id, state, callback.bot, callback.message.message_id
+        )
         await callback.answer()
     except Exception as e:
         logger.error(f"Error in process_retry: {e}")
         await callback.answer(ClientReplies.ERROR_ALERT, show_alert=True)
 
+
 @client_callback_router.callback_query(F.data == "cancel", StateFilter(OrderCar.budget))
 async def process_cancel(callback: CallbackQuery, state: FSMContext):
     try:
         await state.clear()
-        await callback.message.edit_text(
-        ClientReplies.CANCEL_INLINE, reply_markup=None
-    )
+        await callback.message.edit_text(ClientReplies.CANCEL_INLINE, reply_markup=None)
         await callback.answer()
     except Exception as e:
         logger.error(f"Error in process_cancel: {e}")

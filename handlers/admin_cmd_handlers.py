@@ -6,7 +6,7 @@ from config import ADMIN_CHAT_ID
 import logging
 
 from database.core import Database
-from database.repositories import OrderRepository
+from database.repository import OrderRepository
 from utils.filters import IsAdminChatFilter
 from keyboards.common import get_admin_order_keyboard
 from utils.texts import ClientReplies
