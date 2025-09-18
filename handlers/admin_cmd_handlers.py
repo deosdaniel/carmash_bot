@@ -6,7 +6,7 @@ from config import ADMIN_CHAT_ID
 import logging
 
 from database.core import Database
-from database.order_repository import OrderRepository
+from database.repositories import OrderRepository
 from utils.filters import IsAdminChatFilter
 from keyboards.common import get_admin_order_keyboard
 from utils.texts import ClientReplies
@@ -42,7 +42,7 @@ async def cmd_id(message: Message):
 @admin_cmd_router.message(Command("orders"))
 async def cmd_orders(message: Message, db: Database):
     try:
-        async with db.get_session() as session:
+        async with db.async_session_factory as session:
             repo = OrderRepository(session=session)
             orders_list = await repo.get_all_orders()
             if not orders_list:
@@ -80,7 +80,7 @@ async def cmd_order_detail(message: Message, db: Database):
             )
             return
 
-        async with db.get_session() as session:
+        async with db.async_session_factory() as session:
             repo = OrderRepository(session=session)
             order = await repo.get_order_by_id(order_id=order_id)
             if not order:

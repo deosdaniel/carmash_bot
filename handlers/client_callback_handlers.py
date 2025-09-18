@@ -7,7 +7,7 @@ from aiogram.types import CallbackQuery
 
 from config import ADMIN_CHAT_ID
 from database.core import Database
-from database.order_repository import OrderRepository
+from database.repositories import OrderRepository
 from utils.filters import IsAdminChatFilter
 from states import OrderCar
 from utils.texts import ClientReplies
@@ -24,39 +24,30 @@ async def process_confirm(callback: CallbackQuery,
                           state: FSMContext,
                           bot: Bot,
                           db: Database):
-    try:
-        async with db.get_session() as session:
-
-            repo = OrderRepository(session)
-
-            data = await state.get_data()
-            user = callback.from_user
-
+    async with db.async_session_factory() as session:
+        repo = OrderRepository(session)
+        data = await state.get_data()
+        user = callback.from_user
+        try:
             order = await repo.create_order(
                 user_id=user.id,
                 username=user.username,
-                name=data['name'],
-                phone=data['phone'],
-                email=data['email'],
-                city=data['city'],
-                car_model=data['car_model'],
-                budget=data['budget']
+                **data
             )
-
-            logger.info(f"✅ Заявка #{order.id} сохранена в БД")
-
-            await send_admin_notification(bot, order)
-
-            await state.clear()
-
-            await callback.message.edit_text(
-                ClientReplies.CONFIRM_INLINE,
-                reply_markup=None
-            )
-            await callback.answer()
-    except Exception as e:
-        logger.error(f"Error in process_confirm: {e}")
-        await callback.answer(ClientReplies.ERROR_ALERT, show_alert=True)
+            await session.commit()
+        except Exception as e:
+            await session.rollback()
+            logger.error(f"Error in process_confirm: {e}")
+            await callback.answer(ClientReplies.ERROR_ALERT, show_alert=True)
+            return
+    logger.info(f"✅ Заявка #{order.id} сохранена в БД")
+    await send_admin_notification(bot, order)
+    await callback.message.edit_text(
+        ClientReplies.CONFIRM_INLINE,
+        reply_markup=None
+    )
+    await state.clear()
+    await callback.answer()
 
 
 @client_callback_router.callback_query(F.data == "retry", StateFilter(OrderCar.budget))

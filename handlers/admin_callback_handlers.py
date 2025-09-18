@@ -20,7 +20,7 @@ admin_callback_router.callback_query.filter(IsAdminChatFilter(ADMIN_CHAT_ID))
 async def handle_call_action(callback: CallbackQuery, db: Database):
     try:
         order_id = int(callback.data.split("_")[1])
-        async with db.get_session() as session:
+        async with db.async_session_factory() as session:
             order = await session.get(Order, order_id)
             await callback.answer(f"Звоним клиенту: {order.phone}")
         logger.info(f"☎️ Звонок клиенту")
@@ -34,7 +34,7 @@ async def handle_call_action(callback: CallbackQuery, db: Database):
 async def handle_complete_action(callback: CallbackQuery, db: Database):
     try:
         order_id = int(callback.data.split("_")[1])
-        async with db.get_session() as session:
+        async with db.async_session_factory() as session:
             await session.execute(
                 update(Order)
                 .where(Order.id == order_id)
@@ -56,7 +56,7 @@ async def handle_complete_action(callback: CallbackQuery, db: Database):
 async def handle_drop_order(callback: CallbackQuery, db: Database):
     try:
         order_id = int(callback.data.split("_")[1])
-        async with db.get_session() as session:
+        async with db.async_session_factory as session:
             await session.execute(
                 update(Order)
                 .where(Order.id == order_id)
