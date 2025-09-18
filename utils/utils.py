@@ -88,7 +88,7 @@ def format_order_detail(order) -> str:
         f"📞 {'Телефон:'} {order.phone}\n"
         f"📧 {'Email:'} {order.email}\n"
         f"🚗 {'Автомобиль:'} {order.car_model}\n"
-        f"💰 {'Бюджет:'} {order.budget} USD\n"
+        f"💰 {'Бюджет:'} {order.budget} RUB\n"
         f"⏰ {'Создана:'} {order.created_at.strftime('%d.%m.%Y %H:%M')}\n"
         f"📊 {'Статус:'} {order.status}"
     )

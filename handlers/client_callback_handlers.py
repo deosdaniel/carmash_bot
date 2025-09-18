@@ -26,21 +26,20 @@ logger = logging.getLogger(__name__)
 async def process_confirm(
     callback: CallbackQuery, state: FSMContext, bot: Bot, db: Database
 ):
-    async with db.async_session_factory() as session:
-        data = await state.get_data()
-        user = callback.from_user
-        service = OrderService(session)
-        try:
-            order = await service.create_order(
-                OrderCreateSchema(user_id=user.id, username=user.username, **data)
-            )
-            await session.commit()
-        except Exception as e:
-            await session.rollback()
-            logger.error(f"Error in process_confirm: {e}")
-            await callback.answer(ClientReplies.ERROR_ALERT, show_alert=True)
-            return
+    service = OrderService(db.async_session_factory)
+    data = await state.get_data()
+    user = callback.from_user
+    try:
+        order = await service.create_order(
+            OrderCreateSchema(user_id=user.id, username=user.username, **data)
+        )
+    except Exception as e:
+        logger.error(f"Error in process_confirm: {e}")
+        await callback.answer(ClientReplies.ERROR_ALERT, show_alert=True)
+        return
+
     logger.info(f"✅ Заявка #{order.id} сохранена в БД")
+
     await send_admin_notification(bot, order)
     await callback.message.edit_text(ClientReplies.CONFIRM_INLINE, reply_markup=None)
     await state.clear()
