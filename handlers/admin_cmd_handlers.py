@@ -42,7 +42,7 @@ async def cmd_orders(message: Message, db: Database):
             response += f"#{order.id} | {order.name} | {order.phone} | {order.city} | {order.car_model} | {order.status}\n"
         await message.answer(response)
     except Exception as e:
-        logger.error(f"Error in get orders action: {e}")
+        logger.error(f"Ошибка при получении списка заявок: {e}")
         await message.answer(
             f"{ClientReplies.ERROR_ALERT}\n\n Описание ошибки: {e}", show_alert=True
         )
@@ -73,7 +73,7 @@ async def cmd_order_detail(message: Message, db: Database):
             reply_markup=get_admin_order_keyboard(order_id=order.id),
         )
     except Exception as e:
-        logger.error(f"Error in order detail action: {e}")
+        logger.error(f"Ошбика при получении деталей заявки: {e}")
         await message.answer(
             f"{ClientReplies.ERROR_ALERT}\n\n Описание ошибки: {e}", show_alert=True
         )

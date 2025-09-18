@@ -34,7 +34,7 @@ async def process_confirm(
             OrderCreateSchema(user_id=user.id, username=user.username, **data)
         )
     except Exception as e:
-        logger.error(f"Error in process_confirm: {e}")
+        logger.error(f"Ошибка в process_confirm: {e}")
         await callback.answer(ClientReplies.ERROR_ALERT, show_alert=True)
         return
 
@@ -54,7 +54,7 @@ async def process_retry(callback: CallbackQuery, state: FSMContext):
         )
         await callback.answer()
     except Exception as e:
-        logger.error(f"Error in process_retry: {e}")
+        logger.error(f"Ошибка в process_retry: {e}")
         await callback.answer(ClientReplies.ERROR_ALERT, show_alert=True)
 
 
@@ -65,5 +65,5 @@ async def process_cancel(callback: CallbackQuery, state: FSMContext):
         await callback.message.edit_text(ClientReplies.CANCEL_INLINE, reply_markup=None)
         await callback.answer()
     except Exception as e:
-        logger.error(f"Error in process_cancel: {e}")
+        logger.error(f"Ошибка в process_cancel: {e}")
         await callback.answer(ClientReplies.ERROR_ALERT, show_alert=True)

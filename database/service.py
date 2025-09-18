@@ -1,7 +1,10 @@
 from typing import List, Optional
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from database.repository import OrderRepository
 from database.schemas import OrderCreateSchema
+from utils.decorators import commit_session, read_only_session
 from .models import Order
 
 
@@ -9,35 +12,24 @@ class OrderService:
     def __init__(self, session_factory):
         self._session_factory = session_factory
 
-    async def create_order(self, data: OrderCreateSchema) -> Order:
-        async with self._session_factory() as session:
-            repo = OrderRepository(session)
-            try:
-                order = await repo.create_order(**data.model_dump())
-                await session.commit()
-            except Exception:
-                await session.rollback()
-                raise
+    @commit_session
+    async def create_order(
+        self, session: AsyncSession, data: OrderCreateSchema
+    ) -> Order:
+        repo = OrderRepository(session)
+        order = await repo.create_order(**data.model_dump())
         return order
 
-    async def get_all_orders(self) -> List[Order]:
-        async with self._session_factory() as session:
-            repo = OrderRepository(session)
-            try:
-                orders = await repo.get_all_orders()
-            except Exception:
-                await session.rollback()
-                raise
+    @read_only_session
+    async def get_all_orders(self, session: AsyncSession) -> List[Order]:
+        repo = OrderRepository(session)
+        orders = await repo.get_all_orders()
         return orders
 
-    async def get_order_by_id(self, order_id: int) -> Optional[Order]:
-        async with self._session_factory() as session:
-            repo = OrderRepository(session)
-            try:
-                order = await repo.get_order_by_id(order_id)
-            except Exception:
-                await session.rollback()
-                raise
-        if not order:
-            raise ValueError(f"Заявка #{order_id} не найдена")
+    @read_only_session
+    async def get_order_by_id(
+        self, session: AsyncSession, order_id: int
+    ) -> Optional[Order]:
+        repo = OrderRepository(session)
+        order = await repo.get_order_by_id(order_id)
         return order
