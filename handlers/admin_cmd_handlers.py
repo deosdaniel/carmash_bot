@@ -7,15 +7,16 @@ import logging
 
 from database.core import Database
 from database.repository import OrderRepository
+from database.service import OrderService
 from utils.filters import IsAdminChatFilter
 from keyboards.common import get_admin_order_keyboard
 from utils.texts import ClientReplies
+from utils.utils import parse_order_id, format_order_detail
 
 logger = logging.getLogger(__name__)
 
 admin_cmd_router = Router(name="admin_cmd_handlers")
 admin_cmd_router.message.filter(IsAdminChatFilter(ADMIN_CHAT_ID))
-
 
 
 @admin_cmd_router.message(Command("admin"))
@@ -42,9 +43,9 @@ async def cmd_id(message: Message):
 @admin_cmd_router.message(Command("orders"))
 async def cmd_orders(message: Message, db: Database):
     try:
-        async with db.async_session_factory as session:
-            repo = OrderRepository(session=session)
-            orders_list = await repo.get_all_orders()
+        async with db.async_session_factory() as session:
+            service = OrderService(session)
+            orders_list = await service.get_all_orders()
             if not orders_list:
                 await message.answer("Заявок пока нет")
                 return
@@ -56,52 +57,38 @@ async def cmd_orders(message: Message, db: Database):
         logger.error(f"Error in get orders action: {e}")
         await message.answer(ClientReplies.ERROR_ALERT, show_alert=True)
 
+
 @admin_cmd_router.message(Command("order"))
 async def cmd_order_detail(message: Message, db: Database):
+    order_id = parse_order_id(message.text)
+    if not order_id:
+        await message.answer(
+            "❌ <b>Неверный формат ID</b>\n\n"
+            "Использование команды:\n"
+            "/order ID_заявки\n"
+            "Пример: <code>/order 15</code>",
+            parse_mode="HTML",
+        )
+        return
     try:
-        msg_parts = message.text.split()
-        if len(msg_parts) < 2:
-            await message.answer(
-                "📋 <b>Использование команды:</b>\n\n"
-                "/order ID_заявки - просмотр деталей заявки\n"
-                "Пример: <code>/order 15</code>\n\n"
-                "📊 Чтобы посмотреть список всех заявок, используйте /orders",
-                parse_mode="HTML"
-            )
-            return
-        try:
-            order_id = int(msg_parts[1])
-        except ValueError:
-            await message.answer(
-                "❌ <b>Неверный формат ID</b>\n\n"
-                "ID заявки должен быть числом.\n"
-                "Пример: <code>/order 15</code>",
-                parse_mode="HTML"
-            )
-            return
 
         async with db.async_session_factory() as session:
-            repo = OrderRepository(session=session)
-            order = await repo.get_order_by_id(order_id=order_id)
+            service = OrderService(session)
+            order = await service.get_order_by_id(order_id=order_id)
             if not order:
-                await message.answer("❌ <b>Заявка не найдена</b>\n\n"
+                await message.answer(
+                    "❌ <b>Заявка не найдена</b>\n\n"
                     f"Заявка с ID #{order_id} не существует.\n"
                     "Проверьте правильность ID или используйте /orders для списка всех заявок.",
-                    parse_mode="HTML")
+                    parse_mode="HTML",
+                )
                 return
-
-            detail_text = (
-                f"📋 {hbold('Детали заявки')} #{order.id}\n\n"
-                f"👤 {hbold('Клиент:')} {order.name}\n"
-                f"📞 {hbold('Телефон:')} {hlink(order.phone, f'tel:{order.phone}')}\n"
-                f"📧 {hbold('Email:')} {order.email}\n"
-                f"🚗 {hbold('Автомобиль:')} {order.car_model}\n"
-                f"💰 {hbold('Бюджет:')} {order.budget} USD\n"
-                f"⏰ {hbold('Создана:')} {order.created_at.strftime('%d.%m.%Y %H:%M')}\n"
-                f"📊 {hbold('Статус:')} {order.status}"
-            )
-            await message.answer(detail_text, parse_mode="HTML", reply_markup=get_admin_order_keyboard(order_id=order.id))
+            detail_text = format_order_detail(order)
+        await message.answer(
+            detail_text,
+            parse_mode="HTML",
+            reply_markup=get_admin_order_keyboard(order_id=order.id),
+        )
     except Exception as e:
         logger.error(f"Error in order detail action: {e}")
-
         await message.answer(ClientReplies.ERROR_ALERT, show_alert=True)
