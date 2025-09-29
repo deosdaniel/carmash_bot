@@ -25,9 +25,12 @@ def configure_logging(level=logging.INFO):
         datefmt="%Y-%m-%d %H:%M:%S",
         format="[%(asctime)s.%(msecs)03d]  %(module)s:%(lineno)d %(levelname)s - %(message)s",
     )
+    logging.getLogger("aiogram").setLevel(logging.WARNING)
+    logging.getLogger("dispatcher").setLevel(logging.WARNING)
+    logging.getLogger("aiogram.client.session").setLevel(logging.WARNING)
 
     sqlalchemy_logger = logging.getLogger("sqlalchemy.engine")
-    if DB_ECHO == "True":
+    if DB_ECHO == "true":
         sqlalchemy_logger.setLevel(logging.INFO)
     else:
         sqlalchemy_logger.setLevel(logging.WARNING)

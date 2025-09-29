@@ -6,7 +6,13 @@ from aiogram.enums import ParseMode
 
 from config import BOT_TOKEN, ADMIN_CHAT_ID, DATABASE_URL, configure_logging
 from database.core import Database
-from handlers import admin_cmd_handlers, admin_callback_handlers, order_fsm_handlers, client_callback_handlers, client_cmd_handlers
+from handlers import (
+    admin_cmd_handlers,
+    admin_callback_handlers,
+    order_fsm_handlers,
+    client_callback_handlers,
+    client_cmd_handlers,
+)
 from utils.commands_setup import set_user_commands, set_admin_commands
 
 # Настройка логирования
@@ -18,17 +24,19 @@ async def on_startup(bot: Bot):
         await set_user_commands(bot)
         await set_admin_commands(bot, ADMIN_CHAT_ID)
 
-        #await bot.send_message(ADMIN_CHAT_ID, "🤖 Бот запущен и готов к работе! ↗️")
+        # await bot.send_message(ADMIN_CHAT_ID, "🤖 Бот запущен и готов к работе! ↗️")
         logger.info(msg="Bot is running")
     except Exception as e:
         logger.error(f"Error sending message to Admin chat: {e}")
 
+
 async def on_shutdown(bot: Bot):
     try:
-        #await bot.send_message(ADMIN_CHAT_ID, "🤖 Бот остановлен! ↘️")
+        # await bot.send_message(ADMIN_CHAT_ID, "🤖 Бот остановлен! ↘️")
         logger.info(msg="Bot is shut down")
     except Exception as e:
         logger.error(f"Error sending message to Admin chat: {e}")
+
 
 async def main():
     configure_logging(level=logging.INFO)
