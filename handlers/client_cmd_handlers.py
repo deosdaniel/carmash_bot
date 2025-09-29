@@ -6,15 +6,15 @@ from aiogram.types import Message
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 
-from config import ADMIN_CHAT_ID
+from config import ADMIN_CHAT_ID, ADMIN_THREAD_ID
 from utils.filters import IsAdminChatFilter
 from keyboards.common import get_on_start_keyboard
 from states import OrderCar
-from utils.utils import  handle_retry
+from utils.utils import handle_retry
 from utils.texts import OrderSteps, ClientReplies, ButtonText
 
 client_cmd_router = Router(name="client_cmd_handlers")
-client_cmd_router.message.filter(~IsAdminChatFilter(ADMIN_CHAT_ID))
+client_cmd_router.message.filter(~IsAdminChatFilter(ADMIN_CHAT_ID, ADMIN_THREAD_ID))
 
 last_start_calls = defaultdict(float)
 
@@ -54,6 +54,7 @@ async def cmd_start(message: Message, state: FSMContext):
             reply_markup=get_on_start_keyboard(),
         )
 
+
 # Команда /help - справка
 @client_cmd_router.message(F.text == ButtonText.HELP)
 @client_cmd_router.message(Command("help"))
@@ -73,12 +74,12 @@ async def cmd_cancel(message: Message, state: FSMContext):
     await state.clear()
     await message.answer(ClientReplies.CANCEL_SUCCESS)
 
+
 # Команда /retry - заполнить заявку заново при ошибке
 @client_cmd_router.message(F.text == ButtonText.RETRY)
 @client_cmd_router.message(Command("retry"))
 async def cmd_retry(message: Message, state: FSMContext):
     await handle_retry(message.chat.id, state, message.bot)
-
 
 
 # Команда /order - начало оформления заявки

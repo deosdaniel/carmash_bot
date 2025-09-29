@@ -12,29 +12,14 @@ class OrderRepository:
 
     async def create_order(
             self,
-            user_id: int,
-            name: str,
-            phone: str,
-            email: str,
-            city: str,
-            car_model: str,
-            budget: str,
-            username: Optional[str] = None,
+            **kwargs
     ) -> Order:
         """Создание новой заявки"""
-        order = Order(
-            user_id=user_id,
-            username=username,
-            name=name,
-            phone=phone,
-            email=email,
-            city=city,
-            car_model=car_model,
-            budget=budget
-        )
+        order = Order(**kwargs)
 
         self.session.add(order)
-        await self.session.commit()
+        await self.session.flush()  # получаем id
+        await self.session.refresh(order)
         return order
 
     async def get_order_by_id(self, order_id: int) -> Optional[Order]:
@@ -62,7 +47,6 @@ class OrderRepository:
 
     async def get_recent_orders(self, hours: int = 24) -> List[Order]:
         """Получение свежих заявок"""
-        from sqlalchemy import func
         recent_time = datetime.now() - timedelta(hours=hours)
 
         result = await self.session.execute(
@@ -77,5 +61,6 @@ class OrderRepository:
         order = await self.get_order_by_id(order_id)
         if order:
             order.status = status
-            await self.session.commit()
+            await self.session.flush()
+            await self.session.refresh(order)
         return order
