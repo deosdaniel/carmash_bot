@@ -1,7 +1,7 @@
 from aiogram import Bot
 from aiogram.fsm.context import FSMContext
 
-from config import ADMIN_CHAT_ID
+from config import ADMIN_CHAT_ID, ADMIN_THREAD_ID
 import logging
 
 from database.models import Order
@@ -27,6 +27,7 @@ async def send_admin_notification(bot: Bot, order: Order):
 
         await bot.send_message(
             chat_id=ADMIN_CHAT_ID,
+            message_thread_id=ADMIN_THREAD_ID,
             text=admin_message,
             reply_markup=get_admin_order_keyboard(order_id=order.id),
         )

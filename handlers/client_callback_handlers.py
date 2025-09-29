@@ -5,7 +5,7 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
-from config import ADMIN_CHAT_ID
+from config import ADMIN_CHAT_ID, ADMIN_THREAD_ID
 from database.core import Database
 from database.schemas import OrderCreateSchema
 from database.service import OrderService
@@ -15,7 +15,9 @@ from utils.texts import ClientReplies
 from utils.utils import send_admin_notification, handle_retry
 
 client_callback_router = Router(name="client_callback_handlers")
-client_callback_router.callback_query.filter(~IsAdminChatFilter(ADMIN_CHAT_ID))
+client_callback_router.callback_query.filter(
+    ~IsAdminChatFilter(ADMIN_CHAT_ID, ADMIN_THREAD_ID)
+)
 
 logger = logging.getLogger(__name__)
 

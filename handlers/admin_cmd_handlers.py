@@ -2,7 +2,7 @@ from aiogram import Router
 from aiogram.types import Message
 from aiogram.filters import Command
 
-from config import ADMIN_CHAT_ID
+from config import ADMIN_CHAT_ID, ADMIN_THREAD_ID
 import logging
 
 from database.core import Database
@@ -15,7 +15,7 @@ from utils.utils import parse_order_id, format_order_detail
 logger = logging.getLogger(__name__)
 
 admin_cmd_router = Router(name="admin_cmd_handlers")
-admin_cmd_router.message.filter(IsAdminChatFilter(ADMIN_CHAT_ID))
+admin_cmd_router.message.filter(IsAdminChatFilter(ADMIN_CHAT_ID, ADMIN_THREAD_ID))
 
 
 @admin_cmd_router.message(Command("admin"))
