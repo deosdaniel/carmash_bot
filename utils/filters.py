@@ -4,7 +4,6 @@ from aiogram.types import Message, CallbackQuery
 
 class IsAdminChatFilter(Filter):
     def __init__(self, admin_chat_id: int, admin_thread_id: int | None = None):
-        # Убедись, что id корректные
         self.admin_chat_id = int(admin_chat_id)
         self.admin_thread_id = int(admin_thread_id) if admin_thread_id else None
 

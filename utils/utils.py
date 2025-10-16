@@ -65,7 +65,6 @@ async def handle_retry(
 
 def parse_order_id(text: str) -> int | None:
     """
-    Извлекает ID заявки из текста команды.
     Возвращает int, если получилось, иначе None.
     Пример:
         "/order 15" -> 15
